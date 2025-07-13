@@ -5,7 +5,7 @@ This repository contains raster and vector data files for the IPCC Climate Zones
 [Raster](https://github.com/colinahill/ipcc_climate_zones/blob/main/data/ipcc_climate_zones.nc) and [Vector](https://github.com/colinahill/ipcc_climate_zones/blob/main/data/ipcc_climate_zones.geojson) data can be downloaded directly from the `data` directory. Otherwise, the following steps will recreate these files from the source climate data.
 
 <p align="left">
-    <img src="data/ipcc_climate_zones.png" alt="IPCC Climate Zones Map" width="50%">
+    <img src="data/ipcc_climate_zones.png" alt="IPCC Climate Zones Map" width="70%">
 </p>
 
 ## Usage

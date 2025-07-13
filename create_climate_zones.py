@@ -5,10 +5,12 @@ from pathlib import Path
 import rasterio.features
 import geopandas as gpd
 from shapely.geometry import shape
+import rioxarray
 import odc.geo.xr
 
 data_dir = Path("data")
 raster_outfile = data_dir / "ipcc_climate_zones.nc"
+geotiff_outfile = data_dir / "ipcc_climate_zones.tif"
 plot_outfile = data_dir / "ipcc_climate_zones.png"
 vector_outfile = data_dir / "ipcc_climate_zones.geojson"
 
@@ -77,7 +79,7 @@ print("Computing climate zones...")
 climate_zones = xr.DataArray(
 	np.zeros(elevation.shape),
 	dims=('lat', 'lon'),
-	coords={'lat': elevation.lat, 'lon': elevation.lon}
+	coords={'lat': elevation.lat, 'lon': elevation.lon},
 	)
 
 mask_0 = (mat > 18) & (frs <= 7)
@@ -168,8 +170,11 @@ climate_zones = xr.where(land_mask, climate_zones, 0)
 # Prepare the DataArray for writing to disk
 climate_zones = climate_zones.rename('ipcc_climate_zone')
 
+# Convert to int16
+climate_zones = climate_zones.astype('int16')
+
 description = (
-	"IPCC Climate Zones, defined on page 3.47 and 3.48 of" \
+	"IPCC Climate Zones 2019, defined on page 3.47 and 3.48 of" \
 	"https://www.ipcc-nggip.iges.or.jp/public/2019rf/pdf/4_Volume4/19R_V4_Ch03_Land" \
 	"Representation.pdf, ammended with updates described at" \
 	"https://www.ipcc-nggip.iges.or.jp/public/2019rf/corrigenda1.html"
@@ -191,7 +196,7 @@ mapping = {
     12: 'Polar Dry',
 }
 
-labels_string = "\n".join([f"{k}: {v}" for k, v in mapping.items()])
+labels_string = ", ".join([f"{k}: {v}" for k, v in mapping.items()])
 
 climate_zones = climate_zones.assign_attrs({
     "description": description,
@@ -201,8 +206,13 @@ climate_zones = climate_zones.assign_attrs({
 crs = 'EPSG:4326'
 climate_zones = climate_zones.odc.assign_crs(crs)
 
+# Save as netcdf
 climate_zones.to_netcdf(raster_outfile)
 print(f"Raster saved to {raster_outfile}")
+
+# Save as GeoTIFF
+climate_zones.rename({'lon': 'x', 'lat': 'y'}).rio.to_raster(geotiff_outfile)
+print(f"GeoTIFF saved to {geotiff_outfile}")
 
 ########## Plot the climate zones #########
 print("Plotting climate zones...")
@@ -230,7 +240,7 @@ print(f"Plot saved to {plot_outfile}")
 print("Vectorising raster data...")
 
 vectors = rasterio.features.shapes(
-	source=climate_zones.data.astype("int16"),
+	source=climate_zones.data,
 	transform=climate_zones.odc.transform,
 )
 
